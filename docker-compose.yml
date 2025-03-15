@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: easycert-backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
+      - DB_DATABASE=easycert
+      - DB_SYNCHRONIZE=true
+      - DB_LOGGING=true
+      - JWT_SECRET=easycert_secret_key_development
+      - JWT_EXPIRATION=1d
+      - API_PREFIX=api
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - postgres
+    networks:
+      - easycert-network
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: easycert-postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=easycert
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - easycert-network
+
+  # Para desarrollo, se agregará el frontend cuando esté listo
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: easycert-frontend
+  #   restart: always
+  #   ports:
+  #     - "80:80"
+  #   depends_on:
+  #     - backend
+  #   networks:
+  #     - easycert-network
+
+volumes:
+  postgres-data:
+
+networks:
+  easycert-network:
+    driver: bridge
