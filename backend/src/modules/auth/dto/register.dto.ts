@@ -5,10 +5,6 @@ export class RegisterDto {
   @IsNotEmpty({ message: 'El nombre es requerido' })
   firstName: string;
 
-  @IsString({ message: 'El apellido debe ser una cadena de texto' })
-  @IsNotEmpty({ message: 'El apellido es requerido' })
-  lastName: string;
-
   @IsEmail({}, { message: 'El correo electrónico no es válido' })
   @IsNotEmpty({ message: 'El correo electrónico es requerido' })
   email: string;
