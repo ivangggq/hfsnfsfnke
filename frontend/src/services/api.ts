@@ -1,35 +1,58 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 
-const baseURL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
-
+// Create Axios instance with default config
 const api = axios.create({
-  baseURL,
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Interceptor para añadir el token de autenticación a las peticiones
+// Request interceptor for adding auth token
 api.interceptors.request.use(
-  (config) => {
+  (config: AxiosRequestConfig) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
     return config;
   },
-  (error) => Promise.reject(error)
+  (error: AxiosError) => {
+    return Promise.reject(error);
+  }
 );
 
-// Interceptor para manejar errores de autenticación
+// Response interceptor for handling common errors
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response && error.response.status === 401) {
+  (response: AxiosResponse) => {
+    // Some APIs wrap the data in a 'data' property
+    return response.data?.data || response.data;
+  },
+  (error: AxiosError) => {
+    // Handle authentication errors
+    if (error.response?.status === 401) {
+      // Clear token and redirect to login
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      
+      // Only redirect to login if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login';
+      }
     }
-    return Promise.reject(error);
+    
+    // Custom error message handling
+    const errorMessage = error.response?.data?.error?.message || 
+                         error.response?.data?.message || 
+                         error.message || 
+                         'Ha ocurrido un error';
+    
+    return Promise.reject({
+      status: error.response?.status,
+      message: errorMessage,
+      error: error
+    });
   }
 );
 

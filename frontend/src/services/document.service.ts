@@ -1,50 +1,83 @@
 import api from './api';
-
-export interface Document {
-  id: string;
-  name: string;
-  type: string;
-  description?: string;
-  isGenerated: boolean;
-  fileName?: string;
-  contentType?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface GenerateDocumentData {
-  type: string;
-  companyId: string;
-  name?: string;
-  description?: string;
-}
+import { Document, GenerateDocumentRequest } from '../types/document.types';
 
 const DocumentService = {
-  getDocuments: async (companyId: string): Promise<Document[]> => {
-    const response = await api.get<Document[]>(`/documents?companyId=${companyId}`);
-    return response.data;
+  /**
+   * Generate a new document
+   */
+  async generateDocument(documentData: GenerateDocumentRequest): Promise<Document> {
+    try {
+      const response = await api.post<Document>('/documents', documentData);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   },
 
-  getDocument: async (id: string): Promise<Document> => {
-    const response = await api.get<Document>(`/documents/${id}`);
-    return response.data;
+  /**
+   * Get all documents for a company
+   */
+  async getDocuments(companyId: string): Promise<Document[]> {
+    try {
+      const response = await api.get<Document[]>(`/documents?companyId=${companyId}`);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   },
 
-  generateDocument: async (data: GenerateDocumentData): Promise<Document> => {
-    const response = await api.post<Document>('/documents/generate', data);
-    return response.data;
+  /**
+   * Get document by ID
+   */
+  async getDocumentById(id: string): Promise<Document> {
+    try {
+      const response = await api.get<Document>(`/documents/${id}`);
+      return response;
+    } catch (error) {
+      throw error;
+    }
   },
 
-  downloadDocument: async (id: string): Promise<Blob> => {
-    const response = await api.get(`/documents/${id}/download`, {
-      responseType: 'blob',
-    });
-    return response.data;
+  /**
+   * Download document
+   * Returns a URL that can be used to trigger file download
+   */
+  getDocumentDownloadUrl(id: string): string {
+    const token = localStorage.getItem('token');
+    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+    return `${baseUrl}/documents/${id}/download?token=${token}`;
   },
 
-  deleteDocument: async (id: string): Promise<void> => {
-    await api.delete(`/documents/${id}`);
+  /**
+   * Download document
+   * This method will initiate a file download using the browser
+   */
+  downloadDocument(id: string, fileName: string): void {
+    const downloadUrl = this.getDocumentDownloadUrl(id);
+    
+    // Create a hidden link element
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = fileName || `document-${id}.pdf`;
+    document.body.appendChild(link);
+    
+    // Trigger click to start download
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
   },
+
+  /**
+   * Delete a document
+   */
+  async deleteDocument(id: string): Promise<void> {
+    try {
+      await api.delete(`/documents/${id}`);
+    } catch (error) {
+      throw error;
+    }
+  }
 };
 
 export default DocumentService;
