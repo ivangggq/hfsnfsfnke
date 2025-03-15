@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyService } from '@/services/company.service';
 import { documentService } from '@/services/document.service';
 import { useAuth } from '@/context/AuthContext';
@@ -10,14 +10,21 @@ import {
   DocumentTextIcon, 
   ShieldCheckIcon,
   PlusCircleIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  ArrowDownTrayIcon,
+  TrashIcon,
+  ChevronDownIcon
 } from '@heroicons/react/24/outline';
 import { Company, Document } from '@/types/models';
+import DeleteDocumentModal from '@/components/documents/DeleteDocumentModal';
 
 const DashboardPage: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const queryClient = useQueryClient();
   const [selectedCompany, setSelectedCompany] = useState<string | null>(null);
+  const [isCompanyDropdownOpen, setIsCompanyDropdownOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<Document | null>(null);
 
   // Obtener empresas del usuario
   const { 
@@ -50,6 +57,47 @@ const DashboardPage: React.FC = () => {
     }
   );
 
+  // Mutación para eliminar documento
+  const deleteDocumentMutation = useMutation(
+    (documentId: string) => documentService.deleteDocument(documentId),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['documents', selectedCompany]);
+        showToast('Documento eliminado correctamente', 'success');
+        setDocumentToDelete(null);
+      },
+      onError: () => {
+        showToast('Error al eliminar el documento', 'error');
+      },
+    }
+  );
+
+  // Mutación para descargar documento
+  const downloadDocumentMutation = useMutation(
+    (documentId: string) => documentService.downloadDocument(documentId),
+    {
+      onSuccess: (data, documentId) => {
+        const document = documentsData?.data.find((doc: Document) => doc.id === documentId);
+        if (document) {
+          // Crear blob y descargar
+          const blob = new Blob([data], { type: 'application/pdf' });
+          const url = window.URL.createObjectURL(blob);
+          const link = window.document.createElement('a');
+          link.href = url;
+          link.download = document.name.replace(/\s+/g, '_').toLowerCase() + '.pdf';
+          window.document.body.appendChild(link);
+          link.click();
+          window.URL.revokeObjectURL(url);
+          window.document.body.removeChild(link);
+          showToast('Documento descargado correctamente', 'success');
+        }
+      },
+      onError: () => {
+        showToast('Error al descargar el documento', 'error');
+      },
+    }
+  );
+
   const companies = companiesData?.data || [];
   const documents = documentsData?.data || [];
 
@@ -67,8 +115,33 @@ const DashboardPage: React.FC = () => {
     }
   }, [selectedCompany, refetchDocuments]);
 
-  const handleCompanyChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedCompany(e.target.value);
+  const handleCompanySelect = (companyId: string) => {
+    setSelectedCompany(companyId);
+    setIsCompanyDropdownOpen(false);
+  };
+
+  const handleDeleteDocument = () => {
+    if (documentToDelete) {
+      deleteDocumentMutation.mutate(documentToDelete.id);
+    }
+  };
+
+  const handleDownloadDocument = (documentId: string) => {
+    downloadDocumentMutation.mutate(documentId);
+  };
+
+  // Mapeo de tipos de documentos a nombres legibles
+  const documentTypeNames: Record<string, string> = {
+    risk_assessment: 'Evaluación de Riesgos',
+    security_policy: 'Política de Seguridad',
+    isms_scope: 'Alcance SGSI',
+    statement_of_applicability: 'Declaración de Aplicabilidad',
+  };
+
+  // Obtener el nombre de la empresa seleccionada
+  const getSelectedCompanyName = () => {
+    const company = companies.find((company: Company) => company.id === selectedCompany);
+    return company ? company.name : 'Seleccionar empresa';
   };
 
   if (isLoadingCompanies) {
@@ -170,11 +243,16 @@ const DashboardPage: React.FC = () => {
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dt className="text-sm font-medium text-gray-500 truncate">
-                  Estado de Certificación
+                  Plan de Suscripción
                 </dt>
                 <dd className="flex items-baseline">
                   <div className="text-2xl font-semibold text-gray-900">
-                    {companies.length > 0 ? 'En proceso' : 'No iniciado'}
+                    <span className="inline-flex items-center">
+                      Profesional
+                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        Activo
+                      </span>
+                    </span>
                   </div>
                 </dd>
               </div>
@@ -182,7 +260,7 @@ const DashboardPage: React.FC = () => {
           </div>
           <div className="bg-gray-50 px-4 py-4 sm:px-6">
             <a href="#" className="text-sm font-medium text-success hover:text-green-700 flex items-center">
-              Ver estado detallado
+              Administrar suscripción
               <ArrowRightIcon className="ml-1 h-4 w-4" />
             </a>
           </div>
@@ -226,27 +304,73 @@ const DashboardPage: React.FC = () => {
           </div>
         ) : (
           <>
-            {/* Selector de empresa */}
-            <div className="border-t border-gray-200 px-4 py-5 sm:p-6">
-              <label htmlFor="company" className="block text-sm font-medium text-gray-700">
-                Seleccionar Empresa
-              </label>
-              <select
-                id="company"
-                name="company"
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md"
-                value={selectedCompany || ''}
-                onChange={handleCompanyChange}
-              >
-                <option value="" disabled>
-                  Seleccionar empresa
-                </option>
-                {companies.map((company: Company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
+            {/* Selector de empresa mejorado */}
+            <div className="border-t border-gray-200 px-4 py-5 sm:p-6 bg-gray-50">
+              <div className="flex justify-between mb-4">
+                <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-2">
+                  Seleccionar Empresa
+                </label>
+                
+                {selectedCompany && (
+                  <div className="flex space-x-2">
+                    <Link
+                      to={`/companies/${selectedCompany}/security-info`}
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                    >
+                      <ShieldCheckIcon className="-ml-1 mr-1 h-4 w-4 text-gray-400" aria-hidden="true" />
+                      Seguridad
+                    </Link>
+                    <Link
+                      to={`/companies/${selectedCompany}/documents`}
+                      className="inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                    >
+                      <DocumentTextIcon className="-ml-1 mr-1 h-4 w-4 text-gray-400" aria-hidden="true" />
+                      Documentos
+                    </Link>
+                  </div>
+                )}
+              </div>
+              
+              <div className="relative">
+                <div 
+                  className="cursor-pointer bg-white border border-gray-300 rounded-md shadow-sm pl-3 pr-10 py-2 text-left focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary sm:text-sm"
+                  onClick={() => setIsCompanyDropdownOpen(!isCompanyDropdownOpen)}
+                >
+                  <div className="flex items-center">
+                    <BuildingOfficeIcon className="flex-shrink-0 mr-2 h-5 w-5 text-gray-400" />
+                    <span className="block truncate">{getSelectedCompanyName()}</span>
+                  </div>
+                  <span className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                    <ChevronDownIcon className="h-5 w-5 text-gray-400" aria-hidden="true" />
+                  </span>
+                </div>
+                
+                {isCompanyDropdownOpen && (
+                  <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                    {companies.map((company: Company) => (
+                      <div
+                        key={company.id}
+                        className={`cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-primary-50 ${
+                          selectedCompany === company.id ? 'bg-primary-100 text-primary-900' : 'text-gray-900'
+                        }`}
+                        onClick={() => handleCompanySelect(company.id)}
+                      >
+                        <div className="flex items-center">
+                          <BuildingOfficeIcon className="flex-shrink-0 mr-2 h-5 w-5 text-gray-400" />
+                          <span className="block truncate font-medium">{company.name}</span>
+                        </div>
+                        {selectedCompany === company.id && (
+                          <span className="absolute inset-y-0 right-0 flex items-center pr-4 text-primary-600">
+                            <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Lista de documentos */}
@@ -322,24 +446,21 @@ const DashboardPage: React.FC = () => {
                               {documents.map((document: Document) => (
                                 <tr key={document.id}>
                                   <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="text-sm font-medium text-gray-900">
-                                      {document.name}
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                      {document.description || 'Sin descripción'}
+                                    <div className="flex items-center">
+                                      <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center">
+                                        <DocumentTextIcon className="h-6 w-6 text-gray-400" />
+                                      </div>
+                                      <div className="ml-4">
+                                        <div className="text-sm font-medium text-gray-900">{document.name}</div>
+                                        <div className="text-sm text-gray-500">
+                                          {document.description || 'Sin descripción'}
+                                        </div>
+                                      </div>
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="text-sm text-gray-900">
-                                      {document.type === 'risk_assessment'
-                                        ? 'Evaluación de Riesgos'
-                                        : document.type === 'security_policy'
-                                        ? 'Política de Seguridad'
-                                        : document.type === 'isms_scope'
-                                        ? 'Alcance SGSI'
-                                        : document.type === 'statement_of_applicability'
-                                        ? 'Declaración de Aplicabilidad'
-                                        : document.type}
+                                      {documentTypeNames[document.type] || document.type}
                                     </div>
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap">
@@ -366,12 +487,29 @@ const DashboardPage: React.FC = () => {
                                     {new Date(document.createdAt).toLocaleDateString()}
                                   </td>
                                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <Link
-                                      to={`/companies/${selectedCompany}/documents/${document.id}`}
-                                      className="text-secondary hover:text-secondary-800 mr-4"
-                                    >
-                                      Ver
-                                    </Link>
+                                    <div className="flex justify-end space-x-3">
+                                      <Link
+                                        to={`/companies/${selectedCompany}/documents/${document.id}`}
+                                        className="text-secondary hover:text-secondary-800"
+                                        title="Ver documento"
+                                      >
+                                        Ver
+                                      </Link>
+                                      <button
+                                        onClick={() => handleDownloadDocument(document.id)}
+                                        className="text-secondary hover:text-secondary-800"
+                                        title="Descargar documento"
+                                      >
+                                        <ArrowDownTrayIcon className="h-5 w-5" />
+                                      </button>
+                                      <button
+                                        onClick={() => setDocumentToDelete(document)}
+                                        className="text-gray-400 hover:text-red-600"
+                                        title="Eliminar documento"
+                                      >
+                                        <TrashIcon className="h-5 w-5" />
+                                      </button>
+                                    </div>
                                   </td>
                                 </tr>
                               ))}
@@ -387,6 +525,14 @@ const DashboardPage: React.FC = () => {
           </>
         )}
       </div>
+
+      {/* Modal de confirmación para eliminar documento */}
+      <DeleteDocumentModal
+        document={documentToDelete}
+        isOpen={!!documentToDelete}
+        onClose={() => setDocumentToDelete(null)}
+        onConfirm={handleDeleteDocument}
+      />
     </div>
   );
 };

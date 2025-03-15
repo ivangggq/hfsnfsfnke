@@ -30,6 +30,15 @@ export class User {
   @Column({ nullable: true })
   lastLogin: Date;
 
+  @Column({ nullable: true })
+  openaiKey: string;
+
+  @Column({ default: 'openai' })
+  inferenceMethod: string;
+
+  @Column({ default: 5 })
+  maxRiskScenarios: number;
+
   @OneToMany(() => Company, company => company.user)
   companies: Company[];
 

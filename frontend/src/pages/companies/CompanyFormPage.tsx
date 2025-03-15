@@ -1,16 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery } from '@tanstack/react-query';
+import { Building2, Globe, Mail, MapPin, Phone, User } from 'lucide-react';
 import { companyService } from '@/services/company.service';
 import { securityTemplateService } from '@/services/security-template.service';
 import { useToast } from '@/context/ToastContext';
-import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { CreateCompanyRequest, UpdateCompanyRequest } from '@/types/api';
+import { formatErrorMessage } from '@/utils/errorHandling';
 
-// Esquema de validación
+// Validation Schema
 const companySchema = z.object({
   name: z.string().min(2, 'El nombre debe tener al menos 2 caracteres'),
   industry: z.string().optional(),
@@ -34,7 +35,7 @@ const CompanyFormPage: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditMode = !!id;
 
-  // Obtener datos de la empresa si está en modo edición
+  // Fetch company data if in edit mode
   const { 
     data: companyData,
     isLoading: isLoadingCompany,
@@ -43,14 +44,14 @@ const CompanyFormPage: React.FC = () => {
     () => companyService.getCompanyById(id!),
     {
       enabled: isEditMode,
-      onError: () => {
-        showToast('Error al cargar los datos de la empresa', 'error');
+      onError: (error) => {
+        showToast(formatErrorMessage(error), 'error');
         navigate('/companies');
       }
     }
   );
 
-  // Obtener plantillas de seguridad
+  // Fetch security templates
   const { 
     data: templatesData,
     isLoading: isLoadingTemplates,
@@ -58,8 +59,8 @@ const CompanyFormPage: React.FC = () => {
     ['security-templates', { default: true }],
     () => securityTemplateService.getTemplates(undefined, true),
     {
-      onError: () => {
-        showToast('Error al cargar las plantillas de seguridad', 'error');
+      onError: (error) => {
+        showToast(formatErrorMessage(error), 'error');
       }
     }
   );
@@ -87,7 +88,7 @@ const CompanyFormPage: React.FC = () => {
     },
   });
 
-  // Actualizar el formulario cuando se cargan los datos de la empresa
+  // Update form when company data is loaded
   useEffect(() => {
     if (isEditMode && companyData?.data) {
       const company = companyData.data;
@@ -102,7 +103,7 @@ const CompanyFormPage: React.FC = () => {
         email: company.email || '',
         address: company.address || '',
         logo: company.logo || '',
-        securityTemplateId: '',  // No podemos establecer esta opción en edición
+        securityTemplateId: '',
       });
     }
   }, [isEditMode, companyData, reset]);
@@ -112,24 +113,23 @@ const CompanyFormPage: React.FC = () => {
 
     try {
       if (isEditMode) {
-        // Actualizar empresa existente
+        // Update existing company
         const updateData: UpdateCompanyRequest = { ...data };
         await companyService.updateCompany(id!, updateData);
         showToast('Empresa actualizada correctamente', 'success');
       } else {
-        // Crear nueva empresa
+        // Create new company
         const createData: CreateCompanyRequest = { ...data };
         const response = await companyService.createCompany(createData);
         showToast('Empresa creada correctamente', 'success');
         navigate(`/companies/${response.data.id}`);
       }
     } catch (error: any) {
-      let errorMessage = isEditMode
-        ? 'Error al actualizar la empresa'
-        : 'Error al crear la empresa';
-      
-      if (error.error?.message) {
-        errorMessage = error.error.message;
+      let errorMessage = formatErrorMessage(error);
+      if (!errorMessage) {
+        errorMessage = isEditMode
+          ? 'Error al actualizar la empresa'
+          : 'Error al crear la empresa';
       }
       showToast(errorMessage, 'error');
     } finally {
@@ -139,7 +139,7 @@ const CompanyFormPage: React.FC = () => {
 
   const logoUrl = watch('logo');
 
-  // Mostrar loading mientras se cargan los datos en modo edición
+  // Show loading while data is being fetched in edit mode
   if (isEditMode && isLoadingCompany) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -149,242 +149,387 @@ const CompanyFormPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto py-6">
-      <div className="flex items-center mb-6">
-        <Link
-          to="/companies"
-          className="inline-flex items-center text-sm font-medium text-primary hover:text-primary-700"
-        >
-          <ArrowLeftIcon className="h-4 w-4 mr-1" />
-          Volver a empresas
-        </Link>
-      </div>
+    <div className="flex flex-col justify-center py-6 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-2xl">
+        {/* Botón para volver atrás */}
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => navigate('/companies')}
+            className="inline-flex items-center text-sm font-medium text-primary hover:text-primary-700 transition-colors duration-300"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+            </svg>
+            Volver a empresas
+          </button>
+        </div>
+        
+        {/* Logo and Company Image Section - Compact Header */}
+        <div className="flex items-center mb-4">
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt="Company Logo" 
+              className="h-16 w-16 object-contain rounded-full border-2 border-primary mr-4"
+            />
+          ) : (
+            <div className="h-16 w-16 rounded-full bg-primary text-white flex items-center justify-center mr-4">
+              <Building2 className="h-8 w-8 text-white" />
+            </div>
+          )}
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {isEditMode ? 'Editar Empresa' : 'Nueva Empresa'}
+            </h1>
+            <p className="text-sm text-gray-600">
+              {isEditMode ? 'Actualice la información de la empresa' : 'Complete la información para registrar una nueva empresa'}
+            </p>
+          </div>
+        </div>
 
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">
-        {isEditMode ? 'Editar Empresa' : 'Nueva Empresa'}
-      </h1>
-
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:p-6">
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-              {/* Información básica */}
-              <div className="sm:col-span-4">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Nombre de la empresa *
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="name"
-                    className={`shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md ${
-                      errors.name ? 'border-error' : ''
-                    }`}
-                    {...register('name')}
-                  />
-                  {errors.name && (
-                    <p className="mt-2 text-sm text-error">{errors.name.message}</p>
-                  )}
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            {/* Company Name */}
+            <div>
+              <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                Nombre de la empresa *
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Building2 className="h-5 w-5 text-gray-400" />
                 </div>
-              </div>
-
-              <div className="sm:col-span-2">
-                <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
-                  Logo
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="text"
-                    id="logo"
-                    className={`shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md ${
-                      errors.logo ? 'border-error' : ''
-                    }`}
-                    placeholder="URL del logo"
-                    {...register('logo')}
-                  />
-                  {errors.logo && (
-                    <p className="mt-2 text-sm text-error">{errors.logo.message}</p>
-                  )}
-                </div>
-                {logoUrl && (
-                  <div className="mt-2">
-                    <img
-                      src={logoUrl}
-                      alt="Logo Preview"
-                      className="h-10 w-10 object-contain border border-gray-200 rounded"
-                    />
+                <input
+                  type="text"
+                  id="name"
+                  className={`
+                    appearance-none block w-full px-3 py-2 pl-10 border 
+                    ${errors.name ? 'border-red-500' : 'border-gray-300'}
+                    rounded-md shadow-sm 
+                    focus:outline-none focus:ring-2 focus:ring-primary 
+                    focus:border-primary sm:text-sm
+                  `}
+                  {...register('name')}
+                />
+                {errors.name && (
+                  <div className="absolute right-0 top-0 h-full pr-3 flex items-center">
+                    <span className="text-red-500 text-sm">{errors.name.message}</span>
                   </div>
                 )}
               </div>
+            </div>
 
-              <div className="sm:col-span-3">
+            {/* Logo URL */}
+            <div>
+              <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
+                URL del Logo
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Globe className="h-5 w-5 text-gray-400" />
+                </div>
+                <input
+                  type="text"
+                  id="logo"
+                  placeholder="https://example.com/logo.png"
+                  className={`
+                    appearance-none block w-full px-3 py-2 pl-10 border 
+                    ${errors.logo ? 'border-red-500' : 'border-gray-300'}
+                    rounded-md shadow-sm 
+                    focus:outline-none focus:ring-2 focus:ring-primary 
+                    focus:border-primary sm:text-sm
+                  `}
+                  {...register('logo')}
+                />
+                {errors.logo && (
+                  <div className="absolute right-0 top-0 h-full pr-3 flex items-center">
+                    <span className="text-red-500 text-sm">{errors.logo.message}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Industry and Location */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <label htmlFor="industry" className="block text-sm font-medium text-gray-700">
                   Industria
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
+                  </div>
                   <input
                     type="text"
                     id="industry"
-                    className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
+                    className="
+                      appearance-none block w-full px-3 py-2 pl-10 
+                      border border-gray-300 rounded-md shadow-sm 
+                      focus:outline-none focus:ring-2 focus:ring-primary 
+                      focus:border-primary sm:text-sm
+                    "
                     {...register('industry')}
                   />
                 </div>
               </div>
-
-              <div className="sm:col-span-3">
+              <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700">
                   Ubicación
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin className="h-5 w-5 text-gray-400" />
+                  </div>
                   <input
                     type="text"
                     id="location"
-                    className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
+                    className="
+                      appearance-none block w-full px-3 py-2 pl-10 
+                      border border-gray-300 rounded-md shadow-sm 
+                      focus:outline-none focus:ring-2 focus:ring-primary 
+                      focus:border-primary sm:text-sm
+                    "
                     {...register('location')}
                   />
                 </div>
               </div>
+            </div>
 
-              <div className="sm:col-span-2">
-                <label htmlFor="size" className="block text-sm font-medium text-gray-700">
-                  Tamaño (nº empleados)
-                </label>
-                <div className="mt-1">
-                  <input
-                    type="number"
-                    id="size"
-                    min="0"
-                    className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
-                    {...register('size', { valueAsNumber: true })}
-                  />
-                </div>
+            {/* Company Size */}
+            <div>
+              <label htmlFor="size" className="block text-sm font-medium text-gray-700">
+                Tamaño (nº empleados)
+              </label>
+              <div className="mt-1">
+                <input
+                  type="number"
+                  id="size"
+                  min="0"
+                  className="
+                    appearance-none block w-full px-3 py-2 
+                    border border-gray-300 rounded-md shadow-sm 
+                    focus:outline-none focus:ring-2 focus:ring-primary 
+                    focus:border-primary sm:text-sm
+                  "
+                  {...register('size', { valueAsNumber: true })}
+                />
               </div>
+            </div>
 
-              <div className="sm:col-span-6">
-                <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                  Descripción
-                </label>
-                <div className="mt-1">
-                  <textarea
-                    id="description"
-                    rows={3}
-                    className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
-                    {...register('description')}
-                  />
-                </div>
+            {/* Description */}
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                Descripción
+              </label>
+              <div className="mt-1">
+                <textarea
+                  id="description"
+                  rows={3}
+                  className="
+                    appearance-none block w-full px-3 py-2 
+                    border border-gray-300 rounded-md shadow-sm 
+                    focus:outline-none focus:ring-2 focus:ring-primary 
+                    focus:border-primary sm:text-sm
+                  "
+                  {...register('description')}
+                />
               </div>
+            </div>
 
-              {/* Información de contacto */}
-              <div className="sm:col-span-3">
+            {/* Contact Information */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <label htmlFor="website" className="block text-sm font-medium text-gray-700">
                   Sitio web
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Globe className="h-5 w-5 text-gray-400" />
+                  </div>
                   <input
                     type="text"
                     id="website"
-                    className={`shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md ${
-                      errors.website ? 'border-error' : ''
-                    }`}
                     placeholder="https://example.com"
+                    className={`
+                      appearance-none block w-full px-3 py-2 pl-10 border 
+                      ${errors.website ? 'border-red-500' : 'border-gray-300'}
+                      rounded-md shadow-sm 
+                      focus:outline-none focus:ring-2 focus:ring-primary 
+                      focus:border-primary sm:text-sm
+                    `}
                     {...register('website')}
                   />
                   {errors.website && (
-                    <p className="mt-2 text-sm text-error">{errors.website.message}</p>
+                    <div className="absolute right-0 top-0 h-full pr-3 flex items-center">
+                      <span className="text-red-500 text-sm">{errors.website.message}</span>
+                    </div>
                   )}
                 </div>
               </div>
-
-              <div className="sm:col-span-3">
+              <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   Correo electrónico
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Mail className="h-5 w-5 text-gray-400" />
+                  </div>
                   <input
                     type="email"
                     id="email"
-                    className={`shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md ${
-                      errors.email ? 'border-error' : ''
-                    }`}
+                    className={`
+                      appearance-none block w-full px-3 py-2 pl-10 border 
+                      ${errors.email ? 'border-red-500' : 'border-gray-300'}
+                      rounded-md shadow-sm 
+                      focus:outline-none focus:ring-2 focus:ring-primary 
+                      focus:border-primary sm:text-sm
+                    `}
                     {...register('email')}
                   />
                   {errors.email && (
-                    <p className="mt-2 text-sm text-error">{errors.email.message}</p>
+                    <div className="absolute right-0 top-0 h-full pr-3 flex items-center">
+                      <span className="text-red-500 text-sm">{errors.email.message}</span>
+                    </div>
                   )}
                 </div>
               </div>
+            </div>
 
-              <div className="sm:col-span-3">
+            {/* Phone and Address */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
                   Teléfono
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Phone className="h-5 w-5 text-gray-400" />
+                  </div>
                   <input
                     type="text"
                     id="phone"
-                    className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
+                    className="
+                      appearance-none block w-full px-3 py-2 pl-10 
+                      border border-gray-300 rounded-md shadow-sm 
+                      focus:outline-none focus:ring-2 focus:ring-primary 
+                      focus:border-primary sm:text-sm
+                    "
                     {...register('phone')}
                   />
                 </div>
               </div>
-
-              <div className="sm:col-span-3">
+              <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700">
                   Dirección
                 </label>
-                <div className="mt-1">
+                <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <MapPin className="h-5 w-5 text-gray-400" />
+                  </div>
                   <input
                     type="text"
                     id="address"
-                    className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
+                    className="
+                      appearance-none block w-full px-3 py-2 pl-10 
+                      border border-gray-300 rounded-md shadow-sm 
+                      focus:outline-none focus:ring-2 focus:ring-primary 
+                      focus:border-primary sm:text-sm
+                    "
                     {...register('address')}
                   />
                 </div>
               </div>
-
-              {/* Plantilla de seguridad (solo para nuevas empresas) */}
-              {!isEditMode && (
-                <div className="sm:col-span-6">
-                  <label htmlFor="securityTemplateId" className="block text-sm font-medium text-gray-700">
-                    Plantilla de seguridad
-                  </label>
-                  <div className="mt-1">
-                    <select
-                      id="securityTemplateId"
-                      className="shadow-sm focus:ring-primary focus:border-primary block w-full sm:text-sm border-gray-300 rounded-md"
-                      {...register('securityTemplateId')}
-                      disabled={isLoadingTemplates}
-                    >
-                      <option value="">Seleccionar plantilla (opcional)</option>
-                      {templatesData?.data?.map((template) => (
-                        <option key={template.id} value={template.id}>
-                          {template.name} - {template.industry}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Aplicar una plantilla predefinida de información de seguridad
-                    </p>
-                  </div>
-                </div>
-              )}
             </div>
 
-            <div className="mt-6 flex justify-end">
-              <Link
-                to="/companies"
-                className="bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            {/* Security Template (only for new companies) */}
+            {!isEditMode && (
+              <div>
+                <label htmlFor="securityTemplateId" className="block text-sm font-medium text-gray-700">
+                  Plantilla de seguridad
+                </label>
+                <div className="mt-1">
+                  <select
+                    id="securityTemplateId"
+                    className="
+                      appearance-none block w-full px-3 py-2 
+                      border border-gray-300 rounded-md shadow-sm 
+                      focus:outline-none focus:ring-2 focus:ring-primary 
+                      focus:border-primary sm:text-sm
+                    "
+                    {...register('securityTemplateId')}
+                    disabled={isLoadingTemplates}
+                  >
+                    <option value="">Seleccionar plantilla (opcional)</option>
+                    {templatesData?.data?.map((template) => (
+                      <option key={template.id} value={template.id}>
+                        {template.name} - {template.industry}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Aplicar una plantilla predefinida de información de seguridad
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                type="button"
+                className="
+                  w-full flex justify-center py-2 px-4 
+                  border border-gray-300 rounded-md shadow-sm 
+                  text-sm font-medium text-gray-700 
+                  bg-white hover:bg-gray-50 
+                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary
+                  transition-colors duration-300
+                "
+                onClick={() => navigate('/companies')}
               >
                 Cancelar
-              </Link>
+              </button>
+              
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="ml-3 inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                className="
+                  w-full flex justify-center py-2 px-4 
+                  border border-transparent rounded-md shadow-sm 
+                  text-sm font-medium text-white 
+                  bg-primary hover:bg-primary-700 
+                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary
+                  transition-colors duration-300
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                "
               >
-                {isSubmitting
-                  ? isEditMode ? 'Actualizando...' : 'Creando...'
-                  : isEditMode ? 'Actualizar' : 'Crear'}
+                {isSubmitting ? (
+                  <div className="flex items-center">
+                    <svg 
+                      className="animate-spin h-5 w-5 mr-2" 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      fill="none" 
+                      viewBox="0 0 24 24"
+                    >
+                      <circle 
+                        className="opacity-25" 
+                        cx="12" 
+                        cy="12" 
+                        r="10" 
+                        stroke="currentColor" 
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    {isEditMode ? 'Actualizando...' : 'Creando...'}
+                  </div>
+                ) : (
+                  isEditMode ? 'Actualizar' : 'Crear'
+                )}
               </button>
             </div>
           </form>

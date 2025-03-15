@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateSettingsDto } from './dto/update-settings.dto';
 import { RegisterDto } from '../auth/dto/register.dto';
 import { Logger } from '../../common/services/logger.service';
 import { createEntityNotFoundException, createEntityExistsException } from '../../common/utils/error.utils';
@@ -119,5 +120,48 @@ export class UserService {
    */
   async findAll(): Promise<User[]> {
     return this.userRepository.find();
+  }
+
+  /**
+   * Obtiene la configuración del usuario
+   */
+  async getSettings(id: string): Promise<Partial<User>> {
+    const user = await this.findById(id);
+    
+    if (!user) {
+      throw createEntityNotFoundException('Usuario', id);
+    }
+    
+    return {
+      openaiKey: user.openaiKey,
+      inferenceMethod: user.inferenceMethod,
+      maxRiskScenarios: user.maxRiskScenarios,
+    };
+  }
+
+  /**
+   * Actualiza la configuración del usuario
+   */
+  async updateSettings(id: string, updateSettingsDto: UpdateSettingsDto): Promise<Partial<User>> {
+    const user = await this.findById(id);
+    
+    if (!user) {
+      throw createEntityNotFoundException('Usuario', id);
+    }
+    
+    // Actualizar configuración
+    user.openaiKey = updateSettingsDto.openaiKey;
+    user.inferenceMethod = updateSettingsDto.inferenceMethod;
+    user.maxRiskScenarios = updateSettingsDto.maxRiskScenarios;
+    
+    await this.userRepository.save(user);
+    
+    this.logger.log(`Configuración actualizada para usuario: ${user.email}`);
+    
+    return {
+      openaiKey: user.openaiKey,
+      inferenceMethod: user.inferenceMethod,
+      maxRiskScenarios: user.maxRiskScenarios,
+    };
   }
 }

@@ -1,13 +1,16 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useMemo } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { BookOpen, FileText, ShieldCheck } from 'lucide-react';
 import {
   HomeIcon,
   BuildingOfficeIcon,
   ClipboardDocumentCheckIcon,
   UserCircleIcon,
   UsersIcon,
+  ChevronDownIcon,
+  InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import Logo from '@/components/ui/Logo';
 
@@ -22,18 +25,79 @@ interface NavItem {
   to: string;
   icon: React.ElementType;
   adminOnly?: boolean;
+  subItems?: Array<{
+    name: string;
+    to: string;
+    icon: React.ElementType;
+  }>;
 }
-
-const navItems: NavItem[] = [
-  { name: 'Dashboard', to: '/dashboard', icon: HomeIcon },
-  { name: 'Empresas', to: '/companies', icon: BuildingOfficeIcon },
-  { name: 'Plantillas', to: '/templates', icon: ClipboardDocumentCheckIcon },
-  { name: 'Perfil', to: '/profile', icon: UserCircleIcon },
-  { name: 'Administrar Usuarios', to: '/admin/users', icon: UsersIcon, adminOnly: true },
-];
 
 const Sidebar: React.FC<SidebarProps> = ({ mobile, onClose }) => {
   const { isAdmin } = useAuth();
+  const location = useLocation();
+  
+  // Extraer el ID de compañía de la URL si estamos en una ruta de compañía
+  const companyId = useMemo(() => {
+    const match = location.pathname.match(/\/companies\/([^\/]+)/);
+    return match ? match[1] : null;
+  }, [location.pathname]);
+
+  // Comprobar si estamos en alguna página relacionada con una compañía específica
+  const isCompanyRoute = Boolean(companyId);
+
+  // Definir los elementos del menú, incluyendo submenús condicionales
+  const navItems: NavItem[] = useMemo(() => [
+    { name: 'Dashboard', to: '/dashboard', icon: HomeIcon },
+    { 
+      name: 'Empresas', 
+      to: '/companies', 
+      icon: BuildingOfficeIcon,
+      ...(isCompanyRoute && {
+        subItems: [
+          { 
+            name: 'Información General', 
+            to: `/companies/${companyId}`, 
+            icon: InformationCircleIcon 
+          },
+          { 
+            name: 'Seguridad', 
+            to: `/companies/${companyId}/security-info`, 
+            icon: ShieldCheck 
+          },
+          { 
+            name: 'Documentos', 
+            to: `/companies/${companyId}/documents`, 
+            icon: FileText 
+          }
+        ]
+      })
+    },
+    { name: 'Plantillas', to: '/templates', icon: ClipboardDocumentCheckIcon },
+    { name: 'Perfil', to: '/profile', icon: UserCircleIcon },
+    { name: 'Administrar Usuarios', to: '/admin/users', icon: UsersIcon, adminOnly: true },
+  ], [companyId, isCompanyRoute]);
+
+  // Verificar si una ruta actual corresponde al item o a alguno de sus subitems
+  const isActiveRoute = (item: NavItem): boolean => {
+    if (location.pathname === item.to) return true;
+    if (item.subItems) {
+      return item.subItems.some(subItem => location.pathname === subItem.to);
+    }
+    return false;
+  };
+
+  // Verificar si un item debería mostrar sus subitems expandidos
+  const shouldExpandSubItems = (item: NavItem): boolean => {
+    if (!item.subItems) return false;
+    
+    // Expandir si estamos en la ruta principal del item
+    if (location.pathname === item.to) return true;
+    
+    // Expandir si estamos en alguna de las rutas de los subitems
+    if (item.subItems.some(subItem => location.pathname.startsWith(subItem.to))) return true;
+    
+    return false;
+  };
 
   return (
     <div className="flex-1 flex flex-col min-h-0 bg-primary">
@@ -60,44 +124,96 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile, onClose }) => {
               return null;
             }
 
+            const active = isActiveRoute(item);
+            const expanded = shouldExpandSubItems(item);
+            
             return (
-              <NavLink
-                key={item.name}
-                to={item.to}
-                className={({ isActive }) =>
-                  `${
-                    isActive
-                      ? 'bg-primary-700 text-white'
-                      : 'text-white hover:bg-primary-600 hover:text-white'
-                  } group flex items-center px-2 py-2 text-sm font-medium rounded-md`
-                }
-              >
-                {({ isActive }) => (
-                  <>
-                    <item.icon
-                      className={`${
-                        isActive ? 'text-white' : 'text-primary-300 group-hover:text-white'
-                      } mr-3 flex-shrink-0 h-6 w-6`}
-                      aria-hidden="true"
-                    />
-                    {item.name}
-                  </>
+              <div key={item.name}>
+                <NavLink
+                  to={item.to}
+                  end={Boolean(item.subItems)}
+                  className={({ isActive }) =>
+                    `${
+                      isActive || active
+                        ? 'bg-primary-700 text-white'
+                        : 'text-white hover:bg-primary-600 hover:text-white'
+                    } group flex items-center px-2 py-2 text-sm font-medium rounded-md`
+                  }
+                >
+                  {({ isActive }) => (
+                    <>
+                      <item.icon
+                        className={`${
+                          isActive || active ? 'text-white' : 'text-primary-300 group-hover:text-white'
+                        } mr-3 flex-shrink-0 h-6 w-6`}
+                        aria-hidden="true"
+                      />
+                      <span className="flex-1">{item.name}</span>
+                      {item.subItems && (
+                        <ChevronDownIcon
+                          className={`${
+                            expanded ? 'transform rotate-180' : ''
+                          } ml-2 h-4 w-4 text-primary-300 group-hover:text-white transition-transform duration-150`}
+                        />
+                      )}
+                    </>
+                  )}
+                </NavLink>
+                
+                {/* Subitems */}
+                {item.subItems && expanded && (
+                  <div className="ml-8 mt-1 space-y-1">
+                    {item.subItems.map(subItem => (
+                      <NavLink
+                        key={subItem.name}
+                        to={subItem.to}
+                        end
+                        className={({ isActive }) =>
+                          `${
+                            isActive
+                              ? 'bg-primary-800 text-white'
+                              : 'text-primary-200 hover:bg-primary-700 hover:text-white'
+                          } group flex items-center px-2 py-2 text-xs font-medium rounded-md`
+                        }
+                      >
+                        {({ isActive }) => (
+                          <>
+                            <subItem.icon
+                              className={`${
+                                isActive ? 'text-white' : 'text-primary-300 group-hover:text-white'
+                              } mr-2 flex-shrink-0 h-4 w-4`}
+                              aria-hidden="true"
+                            />
+                            {subItem.name}
+                          </>
+                        )}
+                      </NavLink>
+                    ))}
+                  </div>
                 )}
-              </NavLink>
+              </div>
             );
           })}
         </nav>
       </div>
-      <div className="flex-shrink-0 flex bg-primary-700 p-4">
-        <div className="flex-shrink-0 w-full group block">
-          <div className="flex items-center">
-            <div className="ml-3">
-              <p className="text-sm font-medium text-white">Certificación ISO 27001</p>
-              <p className="text-xs font-medium text-primary-200">Simplificada</p>
+      <a 
+        href="https://tuempresa.github.io/easycert-docs" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="w-full"
+      >
+        <div className="flex-shrink-0 flex bg-primary-700 p-4">
+          <div className="flex-shrink-0 w-full group block">
+            <div className="flex items-center">
+              <BookOpen className="h-5 w-5 text-white" />
+              <div className="ml-3">
+                <p className="text-sm font-medium text-white">Documentación</p>
+                <p className="text-xs font-medium text-primary-200">Manual de usuario</p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </a>
     </div>
   );
 };

@@ -104,17 +104,19 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="flex flex-col justify-center py-6 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="flex justify-center mb-4">
-          <div className="h-24 w-24 rounded-full bg-primary text-white flex items-center justify-center">
-            <User className="h-12 w-12 text-white" />
+        {/* Header más compacto */}
+        <div className="flex items-center mb-4">
+          <div className="h-16 w-16 rounded-full bg-primary text-white flex items-center justify-center mr-4">
+            <User className="h-8 w-8 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Mi Perfil</h1>
+            <p className="text-sm text-gray-600">
+              Gestiona tu información personal y contraseña
+            </p>
           </div>
         </div>
-        <h2 className="text-center text-3xl font-extrabold text-gray-900">
-          Mi Perfil
-        </h2>
-      </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
             <div>
@@ -139,7 +141,9 @@ const ProfilePage: React.FC = () => {
                   {...register('firstName')}
                 />
                 {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-500">{errors.firstName.message}</p>
+                  <div className="absolute right-0 top-0 h-full pr-3 flex items-center">
+                    <span className="text-red-500 text-sm">{errors.firstName.message}</span>
+                  </div>
                 )}
               </div>
             </div>
@@ -215,7 +219,9 @@ const ProfilePage: React.FC = () => {
                       )}
                     </button>
                     {errors.currentPassword && (
-                      <p className="mt-1 text-sm text-red-500">{errors.currentPassword.message}</p>
+                      <div className="absolute right-0 top-full mt-1 pr-3">
+                        <span className="text-red-500 text-sm">{errors.currentPassword.message}</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -250,7 +256,9 @@ const ProfilePage: React.FC = () => {
                       )}
                     </button>
                     {errors.newPassword && (
-                      <p className="mt-1 text-sm text-red-500">{errors.newPassword.message}</p>
+                      <div className="absolute right-0 top-full mt-1 pr-3">
+                        <span className="text-red-500 text-sm">{errors.newPassword.message}</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -285,7 +293,9 @@ const ProfilePage: React.FC = () => {
                       )}
                     </button>
                     {errors.confirmPassword && (
-                      <p className="mt-1 text-sm text-red-500">{errors.confirmPassword.message}</p>
+                      <div className="absolute right-0 top-full mt-1 pr-3">
+                        <span className="text-red-500 text-sm">{errors.confirmPassword.message}</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -303,13 +313,7 @@ const ProfilePage: React.FC = () => {
                   focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary
                   transition-colors duration-300
                 "
-                onClick={() => {
-                  reset({
-                    firstName: user?.firstName || '',
-                    email: user?.email || '',
-                  });
-                  setChangePassword(false);
-                }}
+                onClick={() => window.history.back()}
               >
                 Cancelar
               </button>

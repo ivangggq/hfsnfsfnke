@@ -93,7 +93,9 @@ const RegisterPage: React.FC = () => {
               {...register('firstName')}
             />
             {errors.firstName && (
-              <p className="mt-1 text-sm text-red-500">{errors.firstName.message}</p>
+              <div className="absolute right-0 top-0 h-full pr-3 flex items-center">
+                <span className="text-red-500 text-sm">{errors.firstName.message}</span>
+              </div>
             )}
           </div>
         </div>
@@ -117,7 +119,9 @@ const RegisterPage: React.FC = () => {
               {...register('email')}
             />
             {errors.email && (
-              <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
+              <div className="absolute right-0 top-0 h-full pr-3 flex items-center">
+                <span className="text-red-500 text-sm">{errors.email.message}</span>
+              </div>
             )}
           </div>
         </div>
@@ -152,7 +156,9 @@ const RegisterPage: React.FC = () => {
               )}
             </button>
             {errors.password && (
-              <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>
+              <div className="absolute right-0 top-full mt-1 pr-3">
+                <span className="text-red-500 text-sm">{errors.password.message}</span>
+              </div>
             )}
           </div>
         </div>
@@ -187,7 +193,9 @@ const RegisterPage: React.FC = () => {
               )}
             </button>
             {errors.confirmPassword && (
-              <p className="mt-1 text-sm text-red-500">{errors.confirmPassword.message}</p>
+              <div className="absolute right-0 top-full mt-1 pr-3">
+                <span className="text-red-500 text-sm">{errors.confirmPassword.message}</span>
+              </div>
             )}
           </div>
         </div>

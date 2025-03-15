@@ -1,4 +1,6 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import SettingsPage from '@/pages/settings/SettingsPage'; // Nueva importación
+
 import PrivateRoute from '@/components/PrivateRoute';
 import AppLayout from '@/components/layout/AppLayout';
 import AuthLayout from '@/components/layout/AuthLayout';
@@ -70,6 +72,10 @@ export const router = createBrowserRouter([
           {
             path: 'profile',
             element: <ProfilePage />,
+          },
+          {
+          path: 'settings',
+          element: <SettingsPage />,  // Nueva ruta
           },
           
           // Rutas de empresas

@@ -13,6 +13,25 @@ export interface User {
   updatedAt: string;
 }
 
+export interface UserSettings {
+  /**
+   * Clave de API de OpenAI
+   */
+  openaiKey?: string;
+  
+  /**
+   * Método de inferencia
+   * 'openai': Usar OpenAI API
+   * 'fallback': Usar algoritmo interno
+   */
+  inferenceMethod: string;
+  
+  /**
+   * Número máximo de escenarios de riesgo a generar
+   */
+  maxRiskScenarios: number;
+}
+
 export interface SecurityInfo {
   informationAssets: string[];
   threats: string[];
