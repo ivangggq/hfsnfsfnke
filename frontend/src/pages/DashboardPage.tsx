@@ -377,9 +377,12 @@ const DashboardPage: React.FC = () => {
             {selectedCompany && (
               <div className="border-t border-gray-200">
                 <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-                  <h3 className="text-lg leading-6 font-medium text-gray-900">
-                    Documentos
-                  </h3>
+                  <div className="flex items-center">
+                    <DocumentTextIcon className="h-6 w-6 text-secondary mr-2" aria-hidden="true" />
+                    <h3 className="text-lg leading-6 font-medium text-gray-900">
+                      Documentos
+                    </h3>
+                  </div>
                   <Link
                     to={`/companies/${selectedCompany}/documents/new`}
                     className="inline-flex items-center px-3 py-1.5 border border-transparent text-sm font-medium rounded-md text-white bg-secondary hover:bg-secondary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"

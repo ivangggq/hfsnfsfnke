@@ -52,6 +52,20 @@ services:
       - backend
     networks:
       - easycert-network
+  docs:
+    build:
+      context: ./docs
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./docs/docs:/docs/docs
+      - ./docs/mkdocs.yml:/docs/mkdocs.yml
+    restart: unless-stopped
+    depends_on:
+      - frontend
+    networks:
+      - easycert-network
 volumes:
   postgres-data:
 networks:

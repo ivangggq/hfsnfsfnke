@@ -8,7 +8,6 @@ import { Building2, Globe, Mail, MapPin, Phone, User } from 'lucide-react';
 import { companyService } from '@/services/company.service';
 import { securityTemplateService } from '@/services/security-template.service';
 import { useToast } from '@/context/ToastContext';
-import { CreateCompanyRequest, UpdateCompanyRequest } from '@/types/api';
 import { formatErrorMessage } from '@/utils/errorHandling';
 
 // Validation Schema
@@ -18,12 +17,24 @@ const companySchema = z.object({
   location: z.string().optional(),
   size: z.number().int().nonnegative().optional(),
   description: z.string().optional(),
-  website: z.string().url('URL inválida').optional().or(z.literal('')),
+  website: z.union([
+    z.string().url('URL inválida'),
+    z.literal(''),
+    z.undefined()
+  ]).optional(),
   phone: z.string().optional(),
-  email: z.string().email('Correo electrónico inválido').optional().or(z.literal('')),
+  email: z.union([
+    z.string().email('Correo electrónico inválido'),
+    z.literal(''),
+    z.undefined()
+  ]).optional(),
   address: z.string().optional(),
-  logo: z.string().url('URL inválida').optional().or(z.literal('')),
-  securityTemplateId: z.string().optional(),
+  logo: z.union([
+    z.string().url('URL inválida'),
+    z.literal(''),
+    z.undefined()
+  ]).optional(),
+  securityTemplateId: z.string().optional().or(z.literal('')),
 });
 
 type CompanyFormData = z.infer<typeof companySchema>;
@@ -96,7 +107,7 @@ const CompanyFormPage: React.FC = () => {
         name: company.name,
         industry: company.industry || '',
         location: company.location || '',
-        size: company.size,
+        size: company.size || undefined,
         description: company.description || '',
         website: company.website || '',
         phone: company.phone || '',
@@ -112,15 +123,29 @@ const CompanyFormPage: React.FC = () => {
     setIsSubmitting(true);
 
     try {
+      // Transformar datos - convertir cadenas vacías y valores nulos a undefined
+      const preparedData = {
+        name: data.name, // Este es obligatorio
+        // Todos los campos opcionales - convertir cadenas vacías a undefined
+        industry: data.industry === "" ? undefined : data.industry,
+        location: data.location === "" ? undefined : data.location,
+        size: data.size,
+        description: data.description === "" ? undefined : data.description,
+        website: data.website === "" ? undefined : data.website,
+        phone: data.phone === "" ? undefined : data.phone,
+        email: data.email === "" ? undefined : data.email,
+        address: data.address === "" ? undefined : data.address,
+        logo: data.logo === "" ? undefined : data.logo,
+        securityTemplateId: data.securityTemplateId === "" ? undefined : data.securityTemplateId,
+      };
+
       if (isEditMode) {
-        // Update existing company
-        const updateData: UpdateCompanyRequest = { ...data };
-        await companyService.updateCompany(id!, updateData);
+        // Actualizar empresa existente
+        await companyService.updateCompany(id!, preparedData);
         showToast('Empresa actualizada correctamente', 'success');
       } else {
-        // Create new company
-        const createData: CreateCompanyRequest = { ...data };
-        const response = await companyService.createCompany(createData);
+        // Crear nueva empresa
+        const response = await companyService.createCompany(preparedData);
         showToast('Empresa creada correctamente', 'success');
         navigate(`/companies/${response.data.id}`);
       }
@@ -222,7 +247,7 @@ const CompanyFormPage: React.FC = () => {
             {/* Logo URL */}
             <div>
               <label htmlFor="logo" className="block text-sm font-medium text-gray-700">
-                URL del Logo
+                URL del Logo <span className="text-xs text-gray-500">(opcional)</span>
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -253,7 +278,7 @@ const CompanyFormPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="industry" className="block text-sm font-medium text-gray-700">
-                  Industria
+                  Industria <span className="text-xs text-gray-500">(opcional)</span>
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -274,7 +299,7 @@ const CompanyFormPage: React.FC = () => {
               </div>
               <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700">
-                  Ubicación
+                  Ubicación <span className="text-xs text-gray-500">(opcional)</span>
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -298,7 +323,7 @@ const CompanyFormPage: React.FC = () => {
             {/* Company Size */}
             <div>
               <label htmlFor="size" className="block text-sm font-medium text-gray-700">
-                Tamaño (nº empleados)
+                Tamaño (nº empleados) <span className="text-xs text-gray-500">(opcional)</span>
               </label>
               <div className="mt-1">
                 <input
@@ -311,7 +336,15 @@ const CompanyFormPage: React.FC = () => {
                     focus:outline-none focus:ring-2 focus:ring-primary 
                     focus:border-primary sm:text-sm
                   "
-                  {...register('size', { valueAsNumber: true })}
+                  {...register('size', {
+                    setValueAs: (value) => {
+                      // Si está vacío o es null, devolver undefined para que sea compatible con el tipo
+                      if (value === "" || value === null) return undefined;
+                      // Convertir a número y asegurar que sea válido
+                      const num = parseInt(value, 10);
+                      return isNaN(num) ? undefined : num;
+                    }
+                  })}
                 />
               </div>
             </div>
@@ -319,7 +352,7 @@ const CompanyFormPage: React.FC = () => {
             {/* Description */}
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                Descripción
+                Descripción <span className="text-xs text-gray-500">(opcional)</span>
               </label>
               <div className="mt-1">
                 <textarea
@@ -340,7 +373,7 @@ const CompanyFormPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="website" className="block text-sm font-medium text-gray-700">
-                  Sitio web
+                  Sitio web <span className="text-xs text-gray-500">(opcional)</span>
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -368,7 +401,7 @@ const CompanyFormPage: React.FC = () => {
               </div>
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  Correo electrónico
+                  Correo electrónico <span className="text-xs text-gray-500">(opcional)</span>
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -399,7 +432,7 @@ const CompanyFormPage: React.FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                  Teléfono
+                  Teléfono <span className="text-xs text-gray-500">(opcional)</span>
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -420,7 +453,7 @@ const CompanyFormPage: React.FC = () => {
               </div>
               <div>
                 <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                  Dirección
+                  Dirección <span className="text-xs text-gray-500">(opcional)</span>
                 </label>
                 <div className="mt-1 relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -445,7 +478,7 @@ const CompanyFormPage: React.FC = () => {
             {!isEditMode && (
               <div>
                 <label htmlFor="securityTemplateId" className="block text-sm font-medium text-gray-700">
-                  Plantilla de seguridad
+                  Plantilla de seguridad <span className="text-xs text-gray-500">(opcional)</span>
                 </label>
                 <div className="mt-1">
                   <select

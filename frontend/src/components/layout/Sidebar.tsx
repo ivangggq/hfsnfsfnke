@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { BookOpen, FileText, ShieldCheck } from 'lucide-react';
+import { BookOpen, FileText, ShieldCheck, Settings } from 'lucide-react';
 import {
   HomeIcon,
   BuildingOfficeIcon,
@@ -44,6 +44,9 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile, onClose }) => {
 
   // Comprobar si estamos en alguna página relacionada con una compañía específica
   const isCompanyRoute = Boolean(companyId);
+  
+  // Comprobar si estamos en alguna página relacionada con el perfil o configuración
+  const isProfileRoute = location.pathname.startsWith('/profile') || location.pathname.startsWith('/settings');
 
   // Definir los elementos del menú, incluyendo submenús condicionales
   const navItems: NavItem[] = useMemo(() => [
@@ -73,16 +76,46 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile, onClose }) => {
       })
     },
     { name: 'Plantillas', to: '/templates', icon: ClipboardDocumentCheckIcon },
-    { name: 'Perfil', to: '/profile', icon: UserCircleIcon },
+    { 
+      name: 'Perfil', 
+      to: '/profile', 
+      icon: UserCircleIcon,
+      ...(isProfileRoute && {
+        subItems: [
+          { 
+            name: 'Información Personal', 
+            to: '/profile', 
+            icon: UserCircleIcon 
+          },
+          { 
+            name: 'Configuración', 
+            to: '/settings', 
+            icon: Settings 
+          },
+          { 
+            name: 'Subscripción', 
+            to: '/profile/subscription', 
+            icon: ShieldCheck 
+          }
+        ]
+      })
+    },
     { name: 'Administrar Usuarios', to: '/admin/users', icon: UsersIcon, adminOnly: true },
-  ], [companyId, isCompanyRoute]);
+  ], [companyId, isCompanyRoute, isProfileRoute]);
 
   // Verificar si una ruta actual corresponde al item o a alguno de sus subitems
   const isActiveRoute = (item: NavItem): boolean => {
+    // Para la ruta exacta
     if (location.pathname === item.to) return true;
+    
+    // Para los subitems
     if (item.subItems) {
       return item.subItems.some(subItem => location.pathname === subItem.to);
     }
+    
+    // Caso especial para /settings - considerarlo activo cuando estamos en Perfil
+    if (item.name === 'Perfil' && location.pathname === '/settings') return true;
+    
     return false;
   };
 
@@ -168,13 +201,17 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile, onClose }) => {
                         key={subItem.name}
                         to={subItem.to}
                         end
-                        className={({ isActive }) =>
-                          `${
-                            isActive
+                        className={({ isActive }) => {
+                          // Considerar activo '/settings' cuando estamos en esa ruta
+                          const isNavActive = isActive || 
+                            (subItem.to === '/settings' && location.pathname === '/settings');
+                          
+                          return `${
+                            isNavActive
                               ? 'bg-primary-800 text-white'
                               : 'text-primary-200 hover:bg-primary-700 hover:text-white'
-                          } group flex items-center px-2 py-2 text-xs font-medium rounded-md`
-                        }
+                          } group flex items-center px-2 py-2 text-xs font-medium rounded-md`;
+                        }}
                       >
                         {({ isActive }) => (
                           <>
@@ -197,7 +234,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobile, onClose }) => {
         </nav>
       </div>
       <a 
-        href="https://tuempresa.github.io/easycert-docs" 
+        href="http://localhost:8000/" 
         target="_blank" 
         rel="noopener noreferrer"
         className="w-full"

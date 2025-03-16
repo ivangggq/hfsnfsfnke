@@ -1,0 +1,58 @@
+site_name: Guía de usuario de Easycert
+site_description: Documentación completa para utilizar la plataforma Easycert
+site_author: Equipo de desarrollo de Easycert
+site_url: http://localhost:8000
+
+theme:
+  name: material
+  language: es
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Inicio: index.md
+  - Guía de usuario:
+    - Autenticación: user-guide/authentication.md
+
+markdown_extensions:
+  - attr_list
+  - md_in_html
+  - codehilite
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
+      fallback_to_build_date: true
+
+extra:
+  version: 0.1.0
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/your-organization/easycert

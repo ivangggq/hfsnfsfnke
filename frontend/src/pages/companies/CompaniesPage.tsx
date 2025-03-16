@@ -7,7 +7,8 @@ import {
   PlusIcon, 
   PencilSquareIcon, 
   DocumentTextIcon, 
-  ShieldExclamationIcon 
+  ShieldExclamationIcon,
+  BuildingOfficeIcon
 } from '@heroicons/react/24/outline';
 import { Company } from '@/types/models';
 import DeleteCompanyModal from '@/components/companies/DeleteCompanyModal';
@@ -53,36 +54,50 @@ const CompaniesPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="bg-error-100 border border-error-200 text-error-700 px-4 py-3 rounded relative" role="alert">
-        <strong className="font-bold">Error:</strong>
-        <span className="block sm:inline"> No se pudieron cargar las empresas. Por favor, intenta nuevamente.</span>
+      <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md shadow-sm" role="alert">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <svg className="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-red-800">Error</h3>
+            <div className="mt-1 text-sm text-red-700">
+              No se pudieron cargar las empresas. Por favor, intenta nuevamente.
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="py-6">
+    <div className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-        <div className="md:flex md:items-center md:justify-between">
+        <div className="md:flex md:items-center md:justify-between mb-8">
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-              Empresas
-            </h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <div className="flex items-center">
+              <BuildingOfficeIcon className="h-10 w-10 text-primary mr-3" aria-hidden="true" />
+              <h1 className="text-2xl font-bold leading-tight text-gray-900 sm:text-3xl">
+                Empresas
+              </h1>
+            </div>
+            <p className="mt-2 text-lg text-gray-600">
               Administra las empresas para la certificación ISO 27001
             </p>
           </div>
-          <div className="mt-4 flex md:mt-0 md:ml-4">
+          <div className="mt-5 md:mt-0 md:ml-4">
             <Link
               to="/companies/new"
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors duration-200"
             >
               <PlusIcon className="-ml-1 mr-2 h-5 w-5" aria-hidden="true" />
               Nueva Empresa
@@ -93,20 +108,7 @@ const CompaniesPage: React.FC = () => {
         {companies.length === 0 ? (
           <div className="py-12">
             <div className="text-center">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-                />
-              </svg>
+              <BuildingOfficeIcon className="mx-auto h-16 w-16 text-gray-400" aria-hidden="true" />
               <h3 className="mt-2 text-sm font-medium text-gray-900">No hay empresas</h3>
               <p className="mt-1 text-sm text-gray-500">Comienza creando una nueva empresa.</p>
               <div className="mt-6">
@@ -121,79 +123,73 @@ const CompaniesPage: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="mt-8 grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {companies.map((company: Company) => (
               <div
                 key={company.id}
-                className="bg-white overflow-hidden shadow rounded-lg divide-y divide-gray-200"
+                className="bg-white overflow-hidden shadow-md hover:shadow-lg transition-all duration-200 rounded-lg divide-y divide-gray-200 transform hover:-translate-y-1"
               >
-                <div className="px-4 py-5 sm:p-6">
+                <div className="px-6 py-6">
                   <div className="flex items-center">
                     {company.logo ? (
                       <img
-                        className="h-12 w-12 rounded-full object-cover"
+                        className="h-14 w-14 rounded-full object-cover border border-gray-200"
                         src={company.logo}
                         alt={`${company.name} logo`}
                       />
                     ) : (
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                        <svg
-                          className="h-6 w-6"
-                          fill="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
+                      <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                        <BuildingOfficeIcon className="h-8 w-8" aria-hidden="true" />
                       </div>
                     )}
                     <div className="ml-4">
-                      <h3 className="text-lg font-medium text-gray-900">{company.name}</h3>
-                      <div className="text-sm text-gray-500">
+                      <h3 className="text-xl font-bold text-gray-900">{company.name}</h3>
+                      <div className="text-sm text-gray-500 mt-1">
                         {company.industry || 'Sin industria especificada'}
                       </div>
                     </div>
                   </div>
-                  <div className="mt-4">
-                    <p className="text-sm text-gray-500 line-clamp-3">
+                  <div className="mt-5">
+                    <p className="text-sm text-gray-600 line-clamp-3 min-h-[4.5rem]">
                       {company.description || 'Sin descripción'}
                     </p>
                   </div>
                 </div>
-                <div className="px-4 py-4 sm:px-6">
-                  <div className="flex justify-between">
+                <div className="px-6 py-4">
+                  <div className="flex justify-between items-center">
                     <div className="text-sm font-medium">
                       <Link
                         to={`/companies/${company.id}`}
-                        className="text-primary hover:text-primary-700"
+                        className="text-primary hover:text-primary-700 font-medium"
                       >
                         Ver detalles
                       </Link>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-3">
                       <Link
                         to={`/companies/${company.id}/edit`}
-                        className="text-gray-400 hover:text-gray-500"
+                        className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
                         title="Editar empresa"
                       >
                         <PencilSquareIcon className="h-5 w-5" aria-hidden="true" />
                       </Link>
                       <Link
                         to={`/companies/${company.id}/security-info`}
-                        className="text-gray-400 hover:text-gray-500"
+                        className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
                         title="Información de seguridad"
                       >
                         <ShieldExclamationIcon className="h-5 w-5" aria-hidden="true" />
                       </Link>
                       <Link
                         to={`/companies/${company.id}/documents`}
-                        className="text-gray-400 hover:text-gray-500"
+                        className="text-gray-500 hover:text-gray-700 transition-colors duration-200"
                         title="Documentos"
                       >
                         <DocumentTextIcon className="h-5 w-5" aria-hidden="true" />
                       </Link>
                       <button
                         onClick={() => setCompanyToDelete(company)}
-                        className="text-gray-400 hover:text-error"
+                        className="text-gray-500 hover:text-red-600 transition-colors duration-200"
                         title="Eliminar empresa"
                       >
                         <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
